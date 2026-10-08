@@ -1,0 +1,30 @@
+name: Flutter
+
+on:
+  push:
+    branches: [main]
+    paths: ['fan_app/**', 'scanner_app/**', 'packages/**', '.github/workflows/flutter.yml']
+  pull_request:
+    paths: ['fan_app/**', 'scanner_app/**', 'packages/**', '.github/workflows/flutter.yml']
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [packages/madraj_ui, fan_app, scanner_app]
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.6'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test
+      - run: flutter analyze
+      - run: flutter test
