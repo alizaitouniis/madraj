@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Support\Tenancy\CurrentTeam;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +12,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Scoped: reset for every request and queued job.
+        $this->app->scoped(CurrentTeam::class);
     }
 
     /**

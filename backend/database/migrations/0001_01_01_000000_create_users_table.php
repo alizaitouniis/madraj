@@ -12,12 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
+            // Fans. Staff are in team_members, platform admins in platform_admins.
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
+            $table->string('full_name');
+            $table->string('phone', 20)->unique(); // E.164, e.g. +96170123456
+            $table->string('email')->nullable()->unique();
             $table->string('password');
-            $table->rememberToken();
+            $table->timestamp('phone_verified_at')->nullable();
+            $table->string('avatar')->nullable();
             $table->timestamps();
         });
 
