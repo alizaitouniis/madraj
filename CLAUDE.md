@@ -107,22 +107,26 @@ ink #15201B, muted #4D5A53, line #D9DED9, surface #F3F5F2, white #FFFFFF, cedar 
 
 Platform super admin: manages team accounts and the stadium and zones (outside any team).
 
-## Database (MySQL), first draft
+## Database (MySQL)
 
-- `users` (fans): id, full_name, phone (unique), email (unique), password, phone_verified_at, avatar, timestamps
+Built in step 1 (`backend/database/migrations`). Status and type columns are strings backed by PHP enums in `backend/app/Enums`. Money is `decimal`, times are stored in UTC and shown in `Asia/Beirut` (`config/madraj.php`).
+
+- `users` (fans): id, full_name, phone (unique, E.164 like +96170123456), email (unique, nullable), password, phone_verified_at, avatar, timestamps
 - `otp_codes`: id, phone, code_hash, purpose (register, change_phone, reset_password), expires_at, attempts, consumed_at
-- `platform_admins` (or a flag/role on an admin users table)
-- `teams`: id, name, short_name, crest, colour, status (active, invited, paused), wishmoney_merchant_id, payment_methods (json), timestamps
-- `staff` / `team_members`: id, team_id, name, email, password, role, last_active_at
-- `stadiums`: id, name, address, map_link, opens_minutes_before, parking (json), allowed_items (json), forbidden_items (json), accessibility_note
-- `zones`: id, stadium_id, name, capacity, colour, shape (straight, corner, curved), x, y, width, height, rotation, sort
-- `matches`: id, team_id, opponent_name, opponent_crest, competition, kickoff_at, sales_open_at, sales_close_at, max_per_order (default 6), status (draft, scheduled, on_sale, sold_out, finished)
-- `match_zones`: id, match_id, zone_id, price, tickets_for_sale, max_per_order, on_sale
-- `orders`: id, code (MD-10482), team_id, match_id, user_id, zone_id, quantity, total, method (wishmoney, card, cash), status (pending_payment, paid, reserved, expired, refunded, cancelled), reserved_until, timestamps
-- `tickets`: id, order_id, team_id, match_id, zone_id, holder_name, holder_phone, qr_token (unique, random), status (valid, used, void), checked_in_at, checked_in_by
-- `payments`: id, order_id, method, amount, currency (USD, LBP), status, provider_ref, collected_by (staff id for cash), collected_at
-- `device_tokens`: id, user_id or staff_id, token, platform
-- `notification_settings`: user_id, on_sale, day_before, two_hours, stadium_opens, few_left (booleans)
+- `platform_admins`: id, name, email, password, remember_token, last_active_at (separate table and `platform` guard)
+- `teams`: id, name, short_name, slug (unique), crest, colour, status (active, invited, paused), wishmoney_merchant_id, payment_methods (json), timestamps
+- `team_members` (staff): id, team_id, name, email (unique), phone, password, role (owner, manager, finance, box_office, security), remember_token, last_active_at (`staff` guard; Sanctum tokens for the scanner app)
+- `stadiums`: id, name, address, city, map_link, opens_minutes_before, parking (json list of {name, description, price}), parking_note, allowed_items (json), forbidden_items (json), entry_note, accessibility_note, accessibility_phone
+- `zones`: id, stadium_id, name, description, capacity, colour, shape (straight, corner, curved), x, y, width, height, rotation, sort. Geometry is in builder canvas units (`config/madraj.php` `stadium_canvas`, which also holds the fixed pitch); x, y is the top-left of the unrotated box, rotation is in degrees around its centre.
+- `matches` (model `FootballMatch`, because `match` is reserved in PHP): id, team_id, stadium_id, opponent_name, opponent_crest, opponent_colour, competition, round, kickoff_at, sales_open_at, sales_close_at, max_per_order (default 6), status (draft, scheduled, on_sale, sold_out, finished)
+- `match_zones`: id, team_id, match_id, zone_id, price, tickets_for_sale, max_per_order (null means use the match's), on_sale; unique (match_id, zone_id)
+- `orders`: id, code (MD-10482, unique), team_id, match_id, user_id, zone_id, quantity, total, method (wishmoney, card, cash), status (pending_payment, paid, reserved, expired, refunded, cancelled), reserved_until, timestamps
+- `tickets`: id, order_id, team_id, match_id, zone_id, holder_name, holder_phone, qr_token (unique, random), status (valid, used, void), checked_in_at, checked_in_by (team_members)
+- `payments`: id, order_id, team_id, method, amount, currency (USD, LBP), status (pending, succeeded, failed, refunded), provider_ref, collected_by (team_members, for cash), collected_at
+- `device_tokens`: id, user_id or team_member_id, token (unique), platform (android, ios)
+- `notification_settings`: user_id (primary), on_sale, day_before, two_hours, stadium_opens, few_left (booleans, default on)
+
+Multi-tenancy: tenant models (`TeamMember`, `FootballMatch`, `MatchZone`, `Order`, `Ticket`, `Payment`) use the `BelongsToTeam` trait. When `App\Support\Tenancy\CurrentTeam` is set, queries only see that team's rows and new rows get its team_id. Set it for every staff request (team admin, scanner); fan and platform admin requests leave it empty. Roles and permissions are `App\Enums\Role` and `App\Enums\Permission` (the table above).
 
 Important logic:
 - Lock zone availability when creating an order (database transaction plus row lock) so the last seats can't be sold twice.
@@ -147,7 +151,7 @@ Scanner app:
 
 ## Build order
 
-1. Laravel project, migrations, models, seeders (Cedars FC, Cedar Park Stadium, 4 zones, 4 matches, staff users).
+1. Laravel project, migrations, models, seeders (Cedars FC, stadium ملعب الأرز, 4 zones, 4 matches, staff users). Done.
 2. Auth API with OTP (SMS behind an interface with a fake driver).
 3. Matches and stadium API.
 4. Orders and booking with locking. Cash reservation and the kick-off expiry job.
@@ -196,6 +200,11 @@ Flutter (from `fan_app/`, `scanner_app/` or `packages/madraj_ui/`), Flutter 3.47
 
 ## Existing code
 
-The repository is scaffolded (build order step 0): Laravel with Sanctum and a `GET /api/health` endpoint, the shared UI package, and both Flutter apps opening on an RTL placeholder (fan app with the three bottom tabs, scanner app with the scan screen). Next step is build step 1.
+- Step 0 (scaffold): Laravel with Sanctum and `GET /api/health`, the shared UI package, and both Flutter apps opening on an RTL placeholder.
+- Step 1 (data model): all tables above, models, factories, and seeders. `php artisan migrate:fresh --seed` creates the stadium **ملعب الأرز** (Figma's name; earlier notes called it Cedar Park Stadium) with its 4 zones, **نادي الأرز** with its 5 staff, 4 matches on the next four Saturdays (opponents, times and statuses as in the Figma Matches frame), a platform admin and a demo fan.
+- Demo logins (password `password`, local only): platform admin `admin@madraj.example`; staff `nour@` (owner), `joe@` (manager), `rana@` (finance), `ali@` (box office), `mira@` (security), all `@cedarsfc.example`; fan `+96170123456` / `fan@madraj.example`.
+- No orders or tickets are seeded yet, so the "sold out" match has no sales behind it. That comes with booking in step 4.
+
+Next is build step 2: auth API with OTP.
 
 A first English Flutter prototype of the fan app exists (from the planning chat, `madraj_flutter.zip`), not in this repository. It uses dummy data and an older English, left-to-right design. It can be used as a starting point but must be converted to Arabic RTL and to the current Figma screens.

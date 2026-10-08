@@ -2,24 +2,21 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+/**
+ * Launch data (stadium, Cedars FC) plus demo accounts. Content follows the Figma frames.
+ * Demo accounts use the password "password": do not run on production as is.
+ */
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            PlatformAdminSeeder::class,
+            StadiumSeeder::class,
+            CedarsFcSeeder::class,
+            DemoFanSeeder::class,
         ]);
     }
 }

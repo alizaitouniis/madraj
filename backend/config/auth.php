@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\PlatformAdmin;
+use App\Models\TeamMember;
 use App\Models\User;
 
 return [
@@ -42,6 +44,18 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Team admin dashboard (club staff).
+        'staff' => [
+            'driver' => 'session',
+            'provider' => 'team_members',
+        ],
+
+        // Platform admin dashboard.
+        'platform' => [
+            'driver' => 'session',
+            'provider' => 'platform_admins',
+        ],
     ],
 
     /*
@@ -65,6 +79,16 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'team_members' => [
+            'driver' => 'eloquent',
+            'model' => TeamMember::class,
+        ],
+
+        'platform_admins' => [
+            'driver' => 'eloquent',
+            'model' => PlatformAdmin::class,
         ],
 
         // 'users' => [
