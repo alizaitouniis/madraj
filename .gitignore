@@ -1,0 +1,8 @@
+# Editors and OS
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/
+
+# Each project (backend/, fan_app/, scanner_app/, packages/*) has its own .gitignore.
