@@ -1,0 +1,38 @@
+name: madraj_ui
+description: "Shared Madraj design tokens, fonts and theme (Arabic RTL)."
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.13.5
+  flutter: ">=3.47.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  # Static instances cut from the Google Fonts variable fonts (OFL, see fonts/).
+  # Used from the apps as 'packages/madraj_ui/<family>'.
+  fonts:
+    - family: Cairo
+      fonts:
+        - asset: fonts/Cairo-Regular.ttf
+          weight: 400
+        - asset: fonts/Cairo-Medium.ttf
+          weight: 500
+        - asset: fonts/Cairo-SemiBold.ttf
+          weight: 600
+        - asset: fonts/Cairo-Bold.ttf
+          weight: 700
+    - family: NotoSansArabicCondensed
+      fonts:
+        - asset: fonts/NotoSansArabicCondensed-Bold.ttf
+          weight: 700
