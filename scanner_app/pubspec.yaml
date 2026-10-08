@@ -1,0 +1,28 @@
+name: madraj_scanner
+description: "Madraj security scanner app: scan tickets, collect cash, check fans in."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  dio: ^5.11.1
+  flutter_riverpod: ^3.4.3
+  flutter_secure_storage: ^11.2.0
+  intl: ^0.20.3
+  mobile_scanner: ^7.4.2
+  madraj_ui:
+    path: ../packages/madraj_ui
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
